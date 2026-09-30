@@ -1,3 +1,6 @@
-fn main() {
-    println!("Hello, lush!");
+use anyhow::Result;
+use lush::run;
+
+fn main() -> Result<()> {
+    run()
 }

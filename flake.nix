@@ -27,15 +27,17 @@
           commonArgs = {
             src = craneLib.cleanCargoSource ./.;
             strictDeps = true;
-            buildInputs = [ ];
+            buildInputs = [ pkgs.luajit ];
+            nativeBuildInputs = [ pkgs.pkg-config ];
             # Common arguments can be set here to avoid repeating them later
             # Note: changes here will rebuild all dependency crates
           };
+          cargoArtifacts = craneLib.buildDepsOnly commonArgs;
 
           lush = craneLib.buildPackage (
             commonArgs
             // {
-              cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+              inherit cargoArtifacts;
               # Additional environment variables or build phases/hooks can be set
               # here *without* rebuilding all dependency crates
               # MY_CUSTOM_VAR = "some value";
@@ -43,7 +45,22 @@
           );
         in
         {
-          checks = { inherit lush; };
+          checks = {
+            inherit lush;
+            clippy = craneLib.cargoClippy (
+              commonArgs
+              // {
+                inherit cargoArtifacts;
+              }
+            );
+            nextest = craneLib.cargoNextest (
+              commonArgs
+              // {
+                inherit cargoArtifacts;
+                cargoNextestPartitionsExtraArgs = "--no-tests=pass";
+              }
+            );
+          };
 
           packages.default = lush;
 
@@ -55,7 +72,7 @@
 
             # Extra inputs can be added here; cargo and rustc are provided by default.
             packages = [
-              # pkgs.ripgrep
+              pkgs.bacon
             ];
           };
         };

@@ -4,13 +4,16 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+anyhow = "1.0.104"
+mlua = { version = "0.12.1", features = ["anyhow", "luajit"] }
+rustyline = "18.0.1"
 
 
 # Deny all panics.
 # From https://www.namtao.com/rust-toolkit-2026/#clippy-config
 [lints.clippy]
-pedantic = { level = "deny", priority = -1 }   # UM, ACTUALLY
-nursery = { level = "deny", priority = -1 }    # BETA LINTS
+# pedantic = { level = "deny", priority = -1 }   # UM, ACTUALLY
+# nursery = { level = "deny", priority = -1 }    # BETA LINTS
 # DENY PANICS
 unwrap_used = "deny"
 expect_used = "deny"
