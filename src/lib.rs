@@ -1,6 +1,8 @@
 use anyhow::Result;
 use mlua::Lua;
 
+mod config;
+
 pub fn run() -> Result<()> {
     let lua = Lua::new();
     let mut rl = rustyline::DefaultEditor::new()?;

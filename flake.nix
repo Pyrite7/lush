@@ -20,12 +20,21 @@
           self',
           config,
           pkgs,
+          lib,
           ...
         }:
         let
           craneLib = crane.mkLib pkgs;
+          unfilteredRoot = ./.;
+          src = lib.fileset.toSource {
+            root = unfilteredRoot;
+            fileset = lib.fileset.unions [
+              (craneLib.fileset.commonCargoSources unfilteredRoot)
+              (lib.fileset.fileFilter (file: file.hasExt "lua") unfilteredRoot)
+            ];
+          };
           commonArgs = {
-            src = craneLib.cleanCargoSource ./.;
+            inherit src;
             strictDeps = true;
             buildInputs = [ pkgs.luajit ];
             nativeBuildInputs = [ pkgs.pkg-config ];
