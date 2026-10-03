@@ -1,8 +1,7 @@
 local conf = {}
 
-
 function conf.prompt()
-        return "::<> "
+        return get_cwd() .. ": "
 end
 
 return conf
