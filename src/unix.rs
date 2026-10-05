@@ -1,6 +1,6 @@
-use std::env;
+use std::{env, path::PathBuf, process::Command};
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use mlua::{FromLuaMulti, IntoLua, IntoLuaMulti, Lua, MaybeSend, Table};
 
 pub fn load_unix_library(lua: &Lua) -> Result<()> {
@@ -10,6 +10,7 @@ pub fn load_unix_library(lua: &Lua) -> Result<()> {
     add_fn(lua, &globals, "get_env_var", get_env_var)?;
     add_fn(lua, &globals, "set_env_var", set_env_var)?;
     add_fn(lua, &globals, "remove_env_var", remove_env_var)?;
+    add_fn(lua, &globals, "spawn_process", spawn_process)?;
     Ok(())
 }
 
@@ -32,10 +33,10 @@ fn set_cwd(_lua: &Lua, path: String) -> mlua::Result<()> {
     Ok(env::set_current_dir(&path)?)
 }
 
-fn get_env_var(lua: &Lua, name: String) -> mlua::Result<mlua::Value> {
+fn get_env_var(_lua: &Lua, name: String) -> mlua::Result<Option<String>> {
     match env::var(name) {
-        Ok(value) => value.into_lua(lua),
-        Err(env::VarError::NotPresent) => Ok(mlua::Value::Nil),
+        Ok(value) => Ok(Some(value)),
+        Err(env::VarError::NotPresent) => Ok(None),
         Err(err) => Err(mlua::Error::external(err)),
     }
 }
@@ -55,6 +56,23 @@ fn remove_env_var(_lua: &Lua, name: String) -> mlua::Result<()> {
     unsafe {
         env::remove_var(name);
     }
+    Ok(())
+}
+
+fn spawn_process(_lua: &Lua, (args, options): (Vec<String>, Option<Table>)) -> mlua::Result<()> {
+    let mut cmd =
+        Command::new(args.first().ok_or_else(|| {
+            mlua::Error::external(anyhow!("no program provided for spawn_process"))
+        })?);
+    cmd.args(args.into_iter().skip(1));
+
+    if let Some(options) = options {
+        if let Some(cwd) = options.get::<Option<PathBuf>>("cwd")? {
+            cmd.current_dir(cwd);
+        }
+    }
+
+    cmd.spawn().map_err(mlua::Error::external)?.wait()?;
     Ok(())
 }
 
