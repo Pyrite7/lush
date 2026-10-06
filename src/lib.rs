@@ -6,7 +6,7 @@ use crate::config::{get_config_value, load_config};
 mod config;
 
 pub fn run() -> Result<()> {
-    let lua = Lua::new();
+    let lua = unsafe { Lua::unsafe_new() };
     let mut rl = rustyline::DefaultEditor::new()?;
     let conf = load_config(&lua)?;
 

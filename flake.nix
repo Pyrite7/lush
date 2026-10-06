@@ -36,7 +36,10 @@
           commonArgs = {
             inherit src;
             strictDeps = true;
-            buildInputs = [ pkgs.luajit ];
+            buildInputs = [
+              pkgs.luajit
+              pkgs.luajitPackages.luaposix
+            ];
             nativeBuildInputs = [ pkgs.pkg-config ];
             # Common arguments can be set here to avoid repeating them later
             # Note: changes here will rebuild all dependency crates
