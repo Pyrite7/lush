@@ -1,7 +1,7 @@
 use std::{env, path::PathBuf, process::Command};
 
 use anyhow::{Result, anyhow};
-use mlua::{FromLuaMulti, IntoLua, IntoLuaMulti, Lua, MaybeSend, Table};
+use mlua::{Either, FromLuaMulti, Function, IntoLua, IntoLuaMulti, Lua, MaybeSend, Table};
 
 pub fn load_unix_library(lua: &Lua) -> Result<()> {
     let globals = lua.globals();
@@ -11,6 +11,7 @@ pub fn load_unix_library(lua: &Lua) -> Result<()> {
     add_fn(lua, &globals, "set_env_var", set_env_var)?;
     add_fn(lua, &globals, "remove_env_var", remove_env_var)?;
     add_fn(lua, &globals, "spawn_process", spawn_process)?;
+    add_fn(lua, &globals, "spawn_pipeline", spawn_pipeline)?;
     Ok(())
 }
 
@@ -60,20 +61,45 @@ fn remove_env_var(_lua: &Lua, name: String) -> mlua::Result<()> {
 }
 
 fn spawn_process(_lua: &Lua, (args, options): (Vec<String>, Option<Table>)) -> mlua::Result<()> {
-    let mut cmd =
-        Command::new(args.first().ok_or_else(|| {
-            mlua::Error::external(anyhow!("no program provided for spawn_process"))
-        })?);
-    cmd.args(args.into_iter().skip(1));
+    let mut cmd = command_from_lua(&args, options)?;
+    cmd.spawn().map_err(mlua::Error::external)?.wait()?;
+    Ok(())
+}
 
-    if let Some(options) = options {
-        if let Some(cwd) = options.get::<Option<PathBuf>>("cwd")? {
-            cmd.current_dir(cwd);
+fn spawn_pipeline(_lua: &Lua, tasks: Vec<Either<Table, Function>>) -> mlua::Result<()> {
+    if tasks.is_empty() {
+        return Err(mlua::Error::external(anyhow!(
+            "no tasks provided for spawn_pipeline"
+        )));
+    }
+
+    let mut pipeline: Vec<Either<Command, Function>> = Vec::new();
+    for task in tasks {
+        match task {
+            Either::Left(table) => {
+                let args: Vec<String> = table.get("args")?;
+                let cmd = command_from_lua(&args, Some(table))?;
+            }
+            Either::Right(_) => (),
         }
     }
 
-    cmd.spawn().map_err(mlua::Error::external)?.wait()?;
     Ok(())
+}
+
+fn command_from_lua(args: &[String], options: Option<Table>) -> mlua::Result<Command> {
+    let mut cmd = Command::new(args.first().ok_or_else(|| {
+        mlua::Error::external(anyhow!("tried to spawn process, but no program provided"))
+    })?);
+    cmd.args(args.iter().skip(1));
+
+    if let Some(options) = options
+        && let Some(cwd) = options.get::<Option<PathBuf>>("cwd")?
+    {
+        cmd.current_dir(cwd);
+    }
+
+    Ok(cmd)
 }
 
 #[cfg(test)]
