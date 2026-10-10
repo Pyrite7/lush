@@ -45,13 +45,13 @@ mod tests {
 
     #[test]
     fn test_load_from_str() {
-        let lua = Lua::new();
+        let lua = unsafe { Lua::unsafe_new() };
         assert!(load_from_str(&lua, "return { key1 = 2, key2 = \"value\" }", "=<test>").is_ok());
     }
 
     #[test]
     fn test_get_config_value() {
-        let lua = Lua::new();
+        let lua = unsafe { Lua::unsafe_new() };
         let config =
             load_from_str(&lua, "return { key1 = 2, key2 = \"value\" }", "=<test>").unwrap();
         let _key1: usize = get_config_value(&config, "key1")
@@ -62,7 +62,7 @@ mod tests {
 
     #[test]
     fn test_default_config() {
-        let lua = Lua::new();
+        let lua = unsafe { Lua::unsafe_new() };
         let _config = load_default_config(&lua).expect("default config should be valid");
     }
 }
