@@ -33,12 +33,16 @@
               (lib.fileset.fileFilter (file: file.hasExt "lua") unfilteredRoot)
             ];
           };
+          luaEnv = (pkgs.luajit.withPackages (ps: [ ps.luaposix ]));
+          luaPath = pkgs.luajit.pkgs.getLuaPath luaEnv;
+          luaCPath = pkgs.luajit.pkgs.getLuaCPath luaEnv;
           commonArgs = {
             inherit src;
             strictDeps = true;
             buildInputs = [
-              pkgs.luajit
-              pkgs.luajitPackages.luaposix
+              luaEnv
+              # pkgs.luajit
+              # pkgs.luajitPackages.luaposix
             ];
             nativeBuildInputs = [ pkgs.pkg-config ];
             # Common arguments can be set here to avoid repeating them later
@@ -53,6 +57,8 @@
               # Additional environment variables or build phases/hooks can be set
               # here *without* rebuilding all dependency crates
               # MY_CUSTOM_VAR = "some value";
+              LUA_PATH = luaPath;
+              LUA_CPATH = luaCPath;
             }
           );
         in

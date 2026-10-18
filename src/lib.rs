@@ -1,13 +1,28 @@
 use anyhow::{Result, bail};
-use mlua::{Function, Lua};
+use mlua::{Function, Lua, Table};
 use rustyline::error::ReadlineError;
 
 use crate::config::{get_config_value, load_config};
 
 mod config;
 
+fn setup_lua_path(lua: &Lua) -> Result<()> {
+    let package: Table = lua.globals().get("package")?;
+    package.set(
+        "path",
+        format!("{};{}", env!("LUA_PATH"), package.get::<String>("path")?),
+    )?;
+    package.set(
+        "cpath",
+        format!("{};{}", env!("LUA_CPATH"), package.get::<String>("cpath")?),
+    )?;
+
+    Ok(())
+}
+
 pub fn run() -> Result<()> {
     let lua = unsafe { Lua::unsafe_new() };
+    setup_lua_path(&lua)?;
     let mut rl = rustyline::DefaultEditor::new()?;
     let conf = load_config(&lua)?;
 
