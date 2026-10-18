@@ -27,6 +27,10 @@ function _G.cmd(...)
         return handleErrors(posix.spawn, cmd_args)
 end
 
+function _G.exit()
+        os.exit()
+end
+
 _G.env = setmetatable({}, {
         __index = function(_, key)
                 return stdlib.getenv(key)
@@ -43,7 +47,14 @@ function conf.prompt()
 end
 
 function conf.lineHandler(line)
-        loadstring(line)()
+        local chunk = handleErrors(loadstring, line, "=input")
+        if chunk then
+                local status, err = pcall(chunk)
+                if not status then
+                        io.stderr:write(err .. "\n")
+                        io.stderr:flush()
+                end
+        end
 end
 
 return conf
