@@ -42,4 +42,8 @@ function conf.prompt()
         return unistd.getcwd() .. ": "
 end
 
+function conf.lineHandler(line)
+        loadstring(line)()
+end
+
 return conf
