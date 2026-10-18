@@ -15,7 +15,7 @@ pub fn run() -> Result<()> {
         let prompt: String = prompt_fn.call(())?;
         let line = rl.readline(&prompt)?;
         let line_handler: Function = get_config_value(&conf, "lineHandler")?;
-        line_handler.call(line)?;
+        let _: () = line_handler.call(line)?;
         // if let Err(error) = lua.load(&line).set_name("=input").exec() {
         //     eprintln!("{}", error);
         // }
